@@ -2,6 +2,8 @@ name: Check the scripts
 
 # Runs PSScriptAnalyzer on every push, so mistakes show up here
 # and not on someone's server.
+# The rules it uses are in PSScriptAnalyzerSettings.psd1, which explains
+# why one rule is turned off.
 
 on:
   push:
@@ -23,7 +25,7 @@ jobs:
       - name: Run the check
         shell: pwsh
         run: |
-          $found = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Warning,Error
+          $found = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
           if ($found) {
             $found | Format-Table -AutoSize
             Write-Error "PSScriptAnalyzer found $($found.Count) problem(s)."

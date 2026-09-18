@@ -57,21 +57,23 @@ if (-not (Test-Path $LogPath)) {
 
 $logFile = Join-Path $LogPath "backup_$stamp.log"
 
-function Write-Log {
+# Named Write-BackupLog, not Write-Log, because PowerShell 6 and newer
+# already ship a Write-Log command and overriding it causes confusion.
+function Write-BackupLog {
     param([string]$Message)
     $line = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $Message"
     Write-Host $line
     Add-Content -Path $logFile -Value $line
 }
 
-Write-Log "Backup started."
-Write-Log "Destination: $runFolder"
+Write-BackupLog "Backup started."
+Write-BackupLog "Destination: $runFolder"
 
 $failed = 0
 
 foreach ($folder in $Source) {
     if (-not (Test-Path $folder)) {
-        Write-Log "SKIPPED. Folder not found: $folder"
+        Write-BackupLog "SKIPPED. Folder not found: $folder"
         $failed++
         continue
     }
@@ -80,7 +82,7 @@ foreach ($folder in $Source) {
     $target = Join-Path $runFolder $name
 
     if ($PSCmdlet.ShouldProcess($folder, "Copy to $target")) {
-        Write-Log "Copying $folder"
+        Write-BackupLog "Copying $folder"
 
         # /E    include subfolders, even empty ones
         # /Z    can continue if the network drops
@@ -91,11 +93,11 @@ foreach ($folder in $Source) {
 
         # Robocopy uses exit codes 0 to 7 for success. 8 and above are real errors.
         if ($LASTEXITCODE -ge 8) {
-            Write-Log "FAILED with robocopy code $LASTEXITCODE : $folder"
+            Write-BackupLog "FAILED with robocopy code $LASTEXITCODE : $folder"
             $failed++
         }
         else {
-            Write-Log "Done: $folder"
+            Write-BackupLog "Done: $folder"
         }
     }
 }
@@ -103,7 +105,7 @@ foreach ($folder in $Source) {
 # --- Remove old backups ----------------------------------------------------
 if ($PSBoundParameters.ContainsKey('KeepDays')) {
     $cutoff = (Get-Date).AddDays(-$KeepDays)
-    Write-Log "Looking for backups older than $KeepDays days."
+    Write-BackupLog "Looking for backups older than $KeepDays days."
 
     # Only folders this script made, matched by name pattern, are considered.
     $old = Get-ChildItem -Path $Destination -Directory |
@@ -112,19 +114,19 @@ if ($PSBoundParameters.ContainsKey('KeepDays')) {
     foreach ($dir in $old) {
         if ($PSCmdlet.ShouldProcess($dir.FullName, 'Delete old backup')) {
             Remove-Item -Path $dir.FullName -Recurse -Force
-            Write-Log "Deleted old backup: $($dir.Name)"
+            Write-BackupLog "Deleted old backup: $($dir.Name)"
         }
     }
 
     if ($old.Count -eq 0) {
-        Write-Log "No old backups to delete."
+        Write-BackupLog "No old backups to delete."
     }
 }
 
 if ($failed -gt 0) {
-    Write-Log "Backup finished with $failed problem(s)."
+    Write-BackupLog "Backup finished with $failed problem(s)."
     exit 1
 }
 
-Write-Log "Backup finished with no problems."
+Write-BackupLog "Backup finished with no problems."
 exit 0
