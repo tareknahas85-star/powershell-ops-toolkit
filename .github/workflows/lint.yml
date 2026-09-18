@@ -1,0 +1,32 @@
+name: Check the scripts
+
+# Runs PSScriptAnalyzer on every push, so mistakes show up here
+# and not on someone's server.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze:
+    runs-on: windows-latest
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Run the check
+        shell: pwsh
+        run: |
+          $found = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Warning,Error
+          if ($found) {
+            $found | Format-Table -AutoSize
+            Write-Error "PSScriptAnalyzer found $($found.Count) problem(s)."
+            exit 1
+          }
+          Write-Host "No problems found."

@@ -1,0 +1,6 @@
+# One address per line. Lines starting with # are ignored.
+# Use it like this:
+#   .\Test-Endpoints.ps1 -UrlFile .\urls.example.txt
+
+https://example.com
+https://www.example.org
